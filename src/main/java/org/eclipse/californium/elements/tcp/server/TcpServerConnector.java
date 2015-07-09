@@ -139,6 +139,7 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 	@Override
 	public void setRawDataReceiver(final RawDataChannel messageHandler) {
 		transponder.setRawDataChannel(messageHandler);
+		connMgr.setRawDataChannel(messageHandler);
 	}
 
 	@Override
