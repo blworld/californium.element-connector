@@ -37,16 +37,6 @@ import java.util.Arrays;
  * authenticated sender's identity as a <code>java.security.Principal</code> object.
  */
 public class RawData {
-	
-	public enum MessageType {
-		EVENT,
-		COMMUNICATION
-	}
-	
-	public enum ConnectorEvent {
-		NEW_INCOMING_CONNETION,
-		NEW_INCOMING_DISCONNECT
-	}
 
 	/** The raw message. */
 	public final byte[] bytes;
@@ -59,9 +49,6 @@ public class RawData {
 	
 	private final Principal senderIdentity;
 
-	private final MessageType messageType;
-
-	private final ConnectorEvent connectorEvent;
 	
 	/**
 	 * Instantiates a new raw data.
@@ -83,15 +70,6 @@ public class RawData {
 	 */
 	public RawData(final byte[] data, final InetSocketAddress address) {
 		this(data, address, null, false);
-	}
-	
-	/**
-	 * 
-	 * @param event the event that occured
-	 * @param address the Address of the event
-	 */
-	public RawData(final ConnectorEvent event, final InetSocketAddress address) {
-		this(new byte[0], address, null, false, event);
 	}
 	
 	/**
@@ -156,10 +134,6 @@ public class RawData {
 	 * @throws NullPointerException if data or address is <code>null</code>
 	 */
 	public RawData(final byte[] data, final InetSocketAddress address, final Principal clientIdentity, final boolean multicast) {
-		this(data, address, clientIdentity, multicast, null);
-	}
-	
-	public RawData(final byte[] data, final InetSocketAddress address, final Principal clientIdentity, final boolean multicast, final ConnectorEvent event) {
 		if (data == null) {
 			throw new NullPointerException("Data must not be null");
 		}
@@ -170,10 +144,8 @@ public class RawData {
 		this.address = address;
 		this.senderIdentity = clientIdentity;
 		this.multicast = multicast;
-		this.messageType = event == null ? MessageType.COMMUNICATION : MessageType.EVENT;
-		this.connectorEvent = event;
-		
-	}
+		}
+
 	
 	/**
 	 * Instantiates a new raw data.
@@ -301,29 +273,5 @@ public class RawData {
 	 */
 	public Principal getSenderIdentity() {
 		return senderIdentity;
-	}
-	
-	/**
-	 * Get the Message type.
-	 * 
-	 * If Something meaningful happens at the connector level, 
-	 * the Type will be Internal, if its a message from a node or
-	 * a Client, then it will be External
-	 * @return
-	 */
-	public MessageType getMessageType() {
-		return messageType;
-	}
-	
-	
-	/**
-	 * Get the Type messageless Event
-	 * 
-	 * If the Message Type is Internal, then there will be 
-	 * an event attach to it.
-	 * @return
-	 */
-	public ConnectorEvent getConnectorEvent() {
-		return connectorEvent;
 	}
 }

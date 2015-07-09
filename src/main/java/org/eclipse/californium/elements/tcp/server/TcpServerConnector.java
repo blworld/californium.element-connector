@@ -48,7 +48,7 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 	public TcpServerConnector(final String bindAddress, final int bindPort, final Executor callbackExecutor) {
 		address = new InetSocketAddress(bindAddress, bindPort);
 		transponder = new MessageInboundTransponder(callbackExecutor);
-		connMgr = new TcpServerConnectionMgr(callbackExecutor);
+		connMgr = new TcpServerConnectionMgr();
 	}
 
 	@Override
@@ -139,7 +139,6 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 	@Override
 	public void setRawDataReceiver(final RawDataChannel messageHandler) {
 		transponder.setRawDataChannel(messageHandler);
-		connMgr.setRawDataChannel(messageHandler);
 	}
 
 	@Override
