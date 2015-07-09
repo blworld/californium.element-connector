@@ -10,8 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 
-import org.eclipse.californium.elements.tcp.ConnectionInfo;
-import org.eclipse.californium.elements.tcp.ConnectionInfo.ConnectionState;
+import org.eclipse.californium.elements.RawData;
+import org.eclipse.californium.elements.RawData.ConnectorEvent;
+import org.eclipse.californium.elements.RawDataChannel;
 
 @Sharable
 public class TcpServerConnectionMgr extends ChannelInboundHandlerAdapter{	
@@ -26,18 +27,24 @@ public class TcpServerConnectionMgr extends ChannelInboundHandlerAdapter{
 	 * this is not very efficient, but will suffice for POC
 	 */
 	private final ConcurrentHashMap<InetSocketAddress, Channel> connections = new ConcurrentHashMap<InetSocketAddress, Channel>();
-	private final RemoteConnectionListener listener;
 
-	public TcpServerConnectionMgr(final RemoteConnectionListener listener, final Executor notifyThread) {
-		this.listener = listener;
+
+	private RawDataChannel rawDataChannel;
+
+	public TcpServerConnectionMgr(final Executor notifyThread) {
 		this.notifyThread = notifyThread;
+	}
+	
+
+	public void setRawDataChannel(final RawDataChannel rawDataChannel) {
+		this.rawDataChannel = rawDataChannel;
 	}
 
 	@Override
 	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
 		final InetSocketAddress remote = (InetSocketAddress)ctx.channel().remoteAddress();
 		connections.put(remote, ctx.channel());
-		notify(new ConnectionInfo(ConnectionState.NEW_INCOMING_CONNECT, remote));
+		notify(new RawData(ConnectorEvent.NEW_INCOMING_CONNETION, remote));
 		super.channelActive(ctx);
 	}
 
@@ -49,7 +56,7 @@ public class TcpServerConnectionMgr extends ChannelInboundHandlerAdapter{
 			LOG.finest("Channel did not exist");
 		}
 		else {
-			notify(new ConnectionInfo(ConnectionState.NEW_INCOMING_DISCONNECT, remote));
+			notify(new RawData(ConnectorEvent.NEW_INCOMING_DISCONNECT, remote));
 		}
 		super.channelInactive(ctx);
 	}
@@ -60,11 +67,12 @@ public class TcpServerConnectionMgr extends ChannelInboundHandlerAdapter{
 	}
 
 
-	private void notify(final ConnectionInfo info) {
+	private void notify(final RawData raw) {
 		notifyThread.execute(new Runnable() {
+
 			@Override
 			public void run() {
-				listener.incomingConnectionStateChange(info);
+				rawDataChannel.receiveData(raw);
 			}
 		});
 	}

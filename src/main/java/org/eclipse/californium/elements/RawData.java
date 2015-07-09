@@ -37,6 +37,16 @@ import java.util.Arrays;
  * authenticated sender's identity as a <code>java.security.Principal</code> object.
  */
 public class RawData {
+	
+	public enum MessageType {
+		EVENT,
+		COMMUNICATION
+	}
+	
+	public enum ConnectorEvent {
+		NEW_INCOMING_CONNETION,
+		NEW_INCOMING_DISCONNECT
+	}
 
 	/** The raw message. */
 	public final byte[] bytes;
@@ -47,7 +57,11 @@ public class RawData {
 	/** Indicates if this message is a multicast message */
 	private boolean multicast;
 	
-	private Principal senderIdentity;
+	private final Principal senderIdentity;
+
+	private final MessageType messageType;
+
+	private final ConnectorEvent connectorEvent;
 	
 	/**
 	 * Instantiates a new raw data.
@@ -55,7 +69,8 @@ public class RawData {
 	 * @param data the data that is to be sent or has been received
 	 * @deprecated Use one of the other constructors instead.
 	 */
-	public RawData(byte[] data) {
+	@Deprecated
+	public RawData(final byte[] data) {
 		this(data, null, 0, null, false);
 	}
 	
@@ -66,8 +81,17 @@ public class RawData {
 	 * @param address the IP address and port the data is to be sent to or has been received from
 	 * @throws NullPointerException if any of the given parameters is <code>null</code>
 	 */
-	public RawData(byte[] data, InetSocketAddress address) {
+	public RawData(final byte[] data, final InetSocketAddress address) {
 		this(data, address, null, false);
+	}
+	
+	/**
+	 * 
+	 * @param event the event that occured
+	 * @param address the Address of the event
+	 */
+	public RawData(final ConnectorEvent event, final InetSocketAddress address) {
+		this(new byte[0], address, null, false, event);
 	}
 	
 	/**
@@ -79,7 +103,7 @@ public class RawData {
 	 *     (or <code>null</code> if sender is not authenticated)
 	 * @throws NullPointerException if any of the given parameters is <code>null</code>
 	 */
-	public RawData(byte[] data, InetSocketAddress address, Principal clientIdentity) {
+	public RawData(final byte[] data, final InetSocketAddress address, final Principal clientIdentity) {
 		this(data, address, clientIdentity, false);
 	}
 	
@@ -91,7 +115,7 @@ public class RawData {
 	 * @param port the port the data is to be sent to or has been received from
 	 * @throws NullPointerException if data is <code>null</code>
 	 */
-	public RawData(byte[] data, InetAddress address, int port) {
+	public RawData(final byte[] data, final InetAddress address, final int port) {
 		this(data, address, port, null, false);
 	}
 	
@@ -105,7 +129,7 @@ public class RawData {
 	 *     (or <code>null</code> if sender is not authenticated)
 	 * @throws NullPointerException if data is <code>null</code>
 	 */
-	public RawData(byte[] data, InetAddress address, int port, Principal clientIdentity) {
+	public RawData(final byte[] data, final InetAddress address, final int port, final Principal clientIdentity) {
 		this(data, address, port, clientIdentity, false);
 	}
 	
@@ -117,7 +141,7 @@ public class RawData {
 	 * @param multicast indicates whether the data represents a multicast message
 	 * @throws NullPointerException if data or address is <code>null</code>
 	 */
-	public RawData(byte[] data, InetSocketAddress address, boolean multicast) {
+	public RawData(final byte[] data, final InetSocketAddress address, final boolean multicast) {
 		this(data, address, null, multicast);
 	}
 
@@ -131,7 +155,11 @@ public class RawData {
 	 * @param multicast indicates whether the data represents a multicast message
 	 * @throws NullPointerException if data or address is <code>null</code>
 	 */
-	public RawData(byte[] data, InetSocketAddress address, Principal clientIdentity, boolean multicast) {
+	public RawData(final byte[] data, final InetSocketAddress address, final Principal clientIdentity, final boolean multicast) {
+		this(data, address, clientIdentity, multicast, null);
+	}
+	
+	public RawData(final byte[] data, final InetSocketAddress address, final Principal clientIdentity, final boolean multicast, final ConnectorEvent event) {
 		if (data == null) {
 			throw new NullPointerException("Data must not be null");
 		}
@@ -142,6 +170,9 @@ public class RawData {
 		this.address = address;
 		this.senderIdentity = clientIdentity;
 		this.multicast = multicast;
+		this.messageType = event == null ? MessageType.COMMUNICATION : MessageType.EVENT;
+		this.connectorEvent = event;
+		
 	}
 	
 	/**
@@ -153,7 +184,7 @@ public class RawData {
 	 * @param multicast indicates whether the data represents a multicast message
 	 * @throws NullPointerException if data is <code>null</code>
 	 */
-	public RawData(byte[] data, InetAddress address, int port, boolean multicast) {
+	public RawData(final byte[] data, final InetAddress address, final int port, final boolean multicast) {
 		this(data, address, port, null, multicast);
 	}
 	
@@ -168,7 +199,7 @@ public class RawData {
 	 * @param multicast indicates whether the data represents a multicast message
 	 * @throws NullPointerException if data is <code>null</code>
 	 */
-	public RawData(byte[] data, InetAddress address, int port, Principal clientIdentity, boolean multicast) {
+	public RawData(final byte[] data, final InetAddress address, final int port, final Principal clientIdentity, final boolean multicast) {
 		this(data, new InetSocketAddress(address, port), clientIdentity, multicast);
 	}
 	
@@ -205,7 +236,8 @@ public class RawData {
 	 * @param address the new address
 	 * @deprecated Use constructor instead.
 	 */
-	public void setAddress(InetAddress newAddress) {
+	@Deprecated
+	public void setAddress(final InetAddress newAddress) {
 		this.address = new InetSocketAddress(newAddress, address.getPort());
 	}
 
@@ -224,7 +256,8 @@ public class RawData {
 	 * @param port the new port
 	 * @deprecated Use constructor instead.
 	 */
-	public void setPort(int port) {
+	@Deprecated
+	public void setPort(final int port) {
 		this.address = new InetSocketAddress(address.getAddress(), port);
 	}
 
@@ -243,7 +276,8 @@ public class RawData {
 	 * @param multicast whether this message is a multicast message
 	 * @deprecated Use constructor instead.
 	 */
-	public void setMulticast(boolean multicast) {
+	@Deprecated
+	public void setMulticast(final boolean multicast) {
 		this.multicast = multicast;
 	}
 	
@@ -267,5 +301,29 @@ public class RawData {
 	 */
 	public Principal getSenderIdentity() {
 		return senderIdentity;
+	}
+	
+	/**
+	 * Get the Message type.
+	 * 
+	 * If Something meaningful happens at the connector level, 
+	 * the Type will be Internal, if its a message from a node or
+	 * a Client, then it will be External
+	 * @return
+	 */
+	public MessageType getMessageType() {
+		return messageType;
+	}
+	
+	
+	/**
+	 * Get the Type messageless Event
+	 * 
+	 * If the Message Type is Internal, then there will be 
+	 * an event attach to it.
+	 * @return
+	 */
+	public ConnectorEvent getConnectorEvent() {
+		return connectorEvent;
 	}
 }

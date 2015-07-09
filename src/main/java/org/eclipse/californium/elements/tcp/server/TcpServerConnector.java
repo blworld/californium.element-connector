@@ -24,15 +24,12 @@ import java.util.logging.Logger;
 import org.eclipse.californium.elements.Connector;
 import org.eclipse.californium.elements.RawData;
 import org.eclipse.californium.elements.RawDataChannel;
-import org.eclipse.californium.elements.tcp.ConnectionInfo;
-import org.eclipse.californium.elements.tcp.ConnectionInfo.ConnectionState;
-import org.eclipse.californium.elements.tcp.ConnectionStateListener;
 import org.eclipse.californium.elements.tcp.MessageInboundTransponder;
 import org.eclipse.californium.elements.tcp.framing.FourByteFieldPrepender;
 import org.eclipse.californium.elements.tcp.framing.FourByteFrameDecoder;
 import org.eclipse.californium.elements.utils.FutureAggregate;
 
-public class TcpServerConnector extends ChannelInitializer<SocketChannel> implements Connector, RemoteConnectionListener {
+public class TcpServerConnector extends ChannelInitializer<SocketChannel> implements Connector {
 
 	private static final Logger LOG = Logger.getLogger( TcpServerConnector.class.getName() );
 
@@ -43,9 +40,6 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 	private EventLoopGroup bossGroup;
 	private EventLoopGroup workerGroup;
 	private ChannelFuture communicationChannel;
-	private ConnectionState state = ConnectionState.DISCONNECTED;
-
-	private ConnectionStateListener csl;
 
 	public TcpServerConnector(final String bindAddress, final int bindPort) {
 		this(bindAddress, bindPort, Executors.newCachedThreadPool());
@@ -54,7 +48,7 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 	public TcpServerConnector(final String bindAddress, final int bindPort, final Executor callbackExecutor) {
 		address = new InetSocketAddress(bindAddress, bindPort);
 		transponder = new MessageInboundTransponder(callbackExecutor);
-		connMgr = new TcpServerConnectionMgr(this, callbackExecutor);
+		connMgr = new TcpServerConnectionMgr(callbackExecutor);
 	}
 
 	@Override
@@ -88,7 +82,6 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				printOperationState(future);
-				incomingConnectionStateChange(new ConnectionInfo(ConnectionState.CONNECTED, (InetSocketAddress)future.channel().remoteAddress()));
 			}
 		});
 
@@ -120,7 +113,6 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 		final FutureAggregate aggregateFuture = new FutureAggregate(communicationChannel.channel().closeFuture(),
 				bossGroup.shutdownGracefully(),
 				workerGroup.shutdownGracefully());
-		incomingConnectionStateChange(new ConnectionInfo(ConnectionState.DISCONNECTED, getAddress()));
 		return aggregateFuture;
 	}
 
@@ -152,21 +144,5 @@ public class TcpServerConnector extends ChannelInitializer<SocketChannel> implem
 	@Override
 	public InetSocketAddress getAddress() {
 		return address;
-	}
-
-	public ConnectionState getConnectionState() {
-		return state;
-	}
-
-	@Override
-	public void incomingConnectionStateChange(final ConnectionInfo info) {
-		state = info.getConnectionState();
-		if(csl != null) {
-			csl.stateChange(info);
-		}
-	}
-
-	public void setConnectionStateListener(final ConnectionStateListener csl) {
-		this.csl = csl;
 	}
 }
